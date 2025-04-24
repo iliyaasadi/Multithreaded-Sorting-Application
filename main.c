@@ -70,13 +70,23 @@ void *merge_sort(void *args){    // Sorting the first half and second half of ar
     
     if(left < right){   // Still we can divide the array
         int mid = (right + left)/2;
-        merge_sort_arguments first_args = {array, left, mid};
-        merge_sort_arguments second_args = {array, mid + 1, right};
+        merge_sort_arguments *first_args = malloc(sizeof(merge_sort_arguments));
+        first_args->arr = array;
+        first_args->left = left;
+        first_args->right = mid;
         
-        merge_sort(&first_args);
-        merge_sort(&second_args);
+        merge_sort_arguments *second_args = malloc(sizeof(merge_sort_arguments));
+        second_args->arr = array;
+        second_args->left = mid + 1;
+        second_args->right = right;
+        
+        merge_sort(first_args);
+        merge_sort(second_args);
         
         merge_for_merge_sort(array, left, mid, right);
+        
+        free(first_args);
+        free(second_args);
     }
     
     return NULL;
@@ -113,6 +123,8 @@ void *merge_first_and_second_half_of_main_array(void *args){
     while(j<SIZE/2){
         sorted_arr[k++] = sorted_second[j++];
     }
+    
+    free(arguments);
     return NULL;
 }
 
@@ -135,28 +147,39 @@ int main(void){
         second_half_array[i - (SIZE/2)] = unsorted_array[i];
     }
     
-    merge_sort_arguments first_args = {first_half_array, 0, (SIZE/2) -1};
-    merge_sort_arguments second_args = {second_half_array, 0, (SIZE/2) -1};
+    merge_sort_arguments *first_args = malloc(sizeof(merge_sort_arguments));
+    first_args->arr = first_half_array;
+    first_args->left = 0;
+    first_args->right = (SIZE/2) - 1;
+    
+    merge_sort_arguments *second_args = malloc(sizeof(merge_sort_arguments));
+    second_args->arr = second_half_array;
+    second_args->left = 0;
+    second_args->right = (SIZE/2) - 1;
     
     
     // Create 2 threads for sorting first and second part
     pthread_t sort_first_half_thread,sort_second_half_thread;
     
     
-    pthread_create(&sort_first_half_thread, NULL, merge_sort, (void *)&first_args);
-    pthread_create(&sort_second_half_thread, NULL, merge_sort, (void *)&second_args);
+    pthread_create(&sort_first_half_thread, NULL, merge_sort, (void *)first_args);
+    pthread_create(&sort_second_half_thread, NULL, merge_sort, (void *)second_args);
     
     pthread_join(sort_first_half_thread, NULL);
     pthread_join(sort_second_half_thread, NULL);
     
     
-    merge_first_and_second_of_main_arguments merge_first_second = {sorted_array, first_half_array, second_half_array};
+    merge_first_and_second_of_main_arguments *merge_first_second = malloc(sizeof(merge_first_and_second_of_main_arguments));
+    merge_first_second->sorted_arr = sorted_array;
+    merge_first_second->sorted_first = first_half_array;
+    merge_first_second->sorted_second = second_half_array;
+    
     
     
     // Create a thread to merge these 2 sorted parts
     pthread_t merge_first_and_second_half;
     
-    pthread_create(&merge_first_and_second_half, NULL, merge_first_and_second_half_of_main_array, (void *)&merge_first_second);
+    pthread_create(&merge_first_and_second_half, NULL, merge_first_and_second_half_of_main_array, (void *)merge_first_second);
     
     pthread_join(merge_first_and_second_half, NULL);
     
